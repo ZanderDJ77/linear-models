@@ -1,0 +1,78 @@
+---
+title: "Linear Models"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+library(p8105.datasets)
+set.seed(1)
+```
+
+We will be using `lm` function for linear models
+`Glm` for generalized linear models
+Outputs are complex and we will use the broom package to clean
+
+## Load and Clean the Airbnb Data
+
+```{r}
+data("nyc_airbnb")
+
+nyc_airbnb = 
+  nyc_airbnb |> 
+  mutate(stars = review_scores_location / 2) |> 
+  select(price, stars, borough = neighbourhood_group, neighbourhood, room_type) |> 
+  filter(borough != "Staten Island")
+
+```
+
+Let's fit a model
+
+```{r}
+fit = 
+  nyc_airbnb |> 
+  lm(price ~ stars + borough, data = _)
+
+```
+
+How do we look at the results?
+These are options that arent used a ton
+```{r}
+
+#standard print fit
+#fit
+
+summary(fit)
+summary(fit)$coef
+coef(fit)
+#fitted.values(fit)
+```
+
+
+Tidying up the output using broom is important
+
+```{r}
+fit |> 
+  broom::glance()
+```
+
+Tidying up Coefficients - turn into tibble that can then be further reshaped
+```{r}
+fit |> 
+  broom::tidy() |> 
+  mutate(term = str_replace(term, "borough", "Borough: ")) |> 
+  select(term, estimate, p.value) |> 
+  knitr::kable(digits=3)
+```
+
+```{r}
+fit_2 = 
+  nyc_airbnb |> 
+  mutate(borough = fct_infreq(borough),
+         room_type = fct_infreq(room_type)) |> 
+  lm(price ~ stars + borough + room_type, data = _)
+
+fit_2 |> 
+  broom::tidy()
+```
+
