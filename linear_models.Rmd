@@ -76,3 +76,97 @@ fit_2 |>
   broom::tidy()
 ```
 
+
+## Quick look at diagnostics
+
+
+```{r}
+nyc_airbnb |> 
+modelr::add_residuals(fit_2) |> 
+  ggplot(aes(x = borough, y = resid)) +
+  geom_violin()
+
+nyc_airbnb |> 
+modelr::add_residuals(fit_2) |> 
+  ggplot(aes(x = stars, y = resid)) +
+  geom_point()
+
+
+```
+
+Make sure your modeling does not break the assumptions you started with 
+
+
+## Hypothesis test for categorical predictor
+fit a "null" and "alternative" model
+```{r}
+fit_2 |> 
+  broom::tidy()
+#add and remove variable of interest, all else equal and then see if there are signfiicant differences
+
+fit_null = lm(price ~ stars + borough, data = nyc_airbnb)
+fit_alternative = lm(price ~ stars + borough + room_type, data = nyc_airbnb)
+
+anova(fit_null, fit_alternative) |> 
+  broom::tidy()
+```
+
+
+## Borough-level differences
+
+```{r}
+fit_3 =
+  nyc_airbnb |> 
+  mutate(borough = fct_infreq(borough),
+         room_type = fct_infreq(room_type)) |> 
+  lm(price ~ stars * borough + room_type * borough, data = _)
+
+fit |> 
+  broom::tidy()
+```
+
+
+How to do interactive linear models for each borough to understand borough level differences? Need a function
+
+```{r}
+airbnb_lm = function(df) {
+  lm(price ~ stars + room_type, data = df)
+}
+
+nyc_airbnb |> 
+  nest(df = -borough) |> 
+  mutate(
+    models = map(df, airbnb_lm), 
+    results = map(models, broom::tidy)
+  ) |> 
+  select(borough, results) |> 
+  unnest(results) |> 
+  select(borough, term, estimate) |> 
+  pivot_wider(
+    names_from = term,
+    values_from = estimate
+  ) |> 
+  knitr::kable(digits = 2)
+```
+
+Making an "anonymous function" shortcut
+
+```{r}
+nyc_airbnb |> 
+  nest(df = -borough) |> 
+  mutate(
+    models = map(df, \(df) lm(price ~ stars + room_type, data = df)), 
+    results = map(models, broom::tidy)
+  ) |> 
+  select(borough, results) |> 
+  unnest(results) |> 
+  select(borough, term, estimate) |> 
+  pivot_wider(
+    names_from = term,
+    values_from = estimate
+  ) |> 
+  knitr::kable(digits = 2)
+```
+
+Look at more complex nesting and binary outcomes: https://p8105.com/linear_models.html#Binary_outcomes
+
