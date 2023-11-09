@@ -170,3 +170,39 @@ nyc_airbnb |>
 
 Look at more complex nesting and binary outcomes: https://p8105.com/linear_models.html#Binary_outcomes
 
+
+
+## Homicides in Baltimore
+True False test in Resolved - 1 = True, 0 = False
+```{r}
+baltimore_df = 
+  read_csv("Data/homicide-data.csv") |> 
+  filter(city == "Baltimore") |> 
+  mutate(
+    resolved = as.numeric(disposition == "Closed by arrest"),
+    victim_age = as.numeric(victim_age)
+  ) |> 
+  select(resolved, victim_age, victim_race, victim_sex)
+
+baltimore_df
+```
+
+fitting a logitic regression
+
+```{r}
+fit_logistic = 
+  baltimore_df |> 
+  glm(
+    resolved ~ victim_age + victim_race + victim_sex,
+    data = _,
+    family = binomial())
+
+```
+
+```{r}
+fit_logistic |> 
+broom::tidy() |> 
+  mutate(OR = exp(estimate)) |> 
+  select(term, estimate, OR)
+```
+

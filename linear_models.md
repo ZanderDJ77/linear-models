@@ -298,3 +298,75 @@ nyc_airbnb |>
 
 Look at more complex nesting and binary outcomes:
 <https://p8105.com/linear_models.html#Binary_outcomes>
+
+## Homicides in Baltimore
+
+True False test in Resolved - 1 = True, 0 = False
+
+``` r
+baltimore_df = 
+  read_csv("Data/homicide-data.csv") |> 
+  filter(city == "Baltimore") |> 
+  mutate(
+    resolved = as.numeric(disposition == "Closed by arrest"),
+    victim_age = as.numeric(victim_age)
+  ) |> 
+  select(resolved, victim_age, victim_race, victim_sex)
+```
+
+    ## Rows: 52179 Columns: 12
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (9): uid, victim_last, victim_first, victim_race, victim_age, victim_sex...
+    ## dbl (3): reported_date, lat, lon
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+baltimore_df
+```
+
+    ## # A tibble: 2,827 × 4
+    ##    resolved victim_age victim_race victim_sex
+    ##       <dbl>      <dbl> <chr>       <chr>     
+    ##  1        0         17 Black       Male      
+    ##  2        0         26 Black       Male      
+    ##  3        0         21 Black       Male      
+    ##  4        1         61 White       Male      
+    ##  5        1         46 Black       Male      
+    ##  6        1         27 Black       Male      
+    ##  7        1         21 Black       Male      
+    ##  8        1         16 Black       Male      
+    ##  9        1         21 Black       Male      
+    ## 10        1         44 Black       Female    
+    ## # ℹ 2,817 more rows
+
+fitting a logitic regression
+
+``` r
+fit_logistic = 
+  baltimore_df |> 
+  glm(
+    resolved ~ victim_age + victim_race + victim_sex,
+    data = _,
+    family = binomial())
+```
+
+``` r
+fit_logistic |> 
+broom::tidy() |> 
+  mutate(OR = exp(estimate)) |> 
+  select(term, estimate, OR)
+```
+
+    ## # A tibble: 7 × 3
+    ##   term                estimate    OR
+    ##   <chr>                  <dbl> <dbl>
+    ## 1 (Intercept)          1.49    4.42 
+    ## 2 victim_age          -0.00724 0.993
+    ## 3 victim_raceBlack    -1.14    0.320
+    ## 4 victim_raceHispanic -0.562   0.570
+    ## 5 victim_raceOther    -1.06    0.345
+    ## 6 victim_raceWhite    -0.296   0.744
+    ## 7 victim_sexMale      -0.880   0.415
